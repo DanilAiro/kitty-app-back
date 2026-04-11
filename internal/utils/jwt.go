@@ -8,7 +8,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var secretKey = []byte(os.Getenv("JWT_SECRET_KEY"))
+var secretKey = []byte(os.Getenv("JWT_SECRET"))
 
 func CreateToken(email string) (string, error) {
 	// Create claims with standard and custom fields
