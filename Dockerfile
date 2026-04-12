@@ -25,6 +25,4 @@ RUN apk add --no-cache ca-certificates
 
 COPY --from=builder /app/kitty-app-back .
 
-EXPOSE 3000
-
 CMD ["./kitty-app-back"]
