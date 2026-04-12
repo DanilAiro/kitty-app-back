@@ -5,9 +5,11 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 
-	models "github.com/DanilAiro/kitty-app-back/internal/models"
-	utils "github.com/DanilAiro/kitty-app-back/internal/utils"
+	"github.com/DanilAiro/kitty-app-back/internal/models"
+	"github.com/DanilAiro/kitty-app-back/internal/repository"
+	"github.com/DanilAiro/kitty-app-back/internal/utils"
 )
 
 const (
@@ -15,8 +17,11 @@ const (
 	BadUserEmail      string = "BUE"
 	BadUserPassword   string = "BUP"
 	CanNotCreateToken string = "CNCT"
+	CanNotCreateUser  string = "CNCU"
 	BadToken          string = "BT"
 	CanNotVerifyToken string = "CNVT"
+	UserExists        string = "UE"
+	UserDoesNotExists string = "UDNE"
 )
 
 func Router() {
@@ -44,55 +49,75 @@ func fail(c *gin.Context, status int, code, message string) {
 }
 
 func register(c *gin.Context) {
-	var user models.User
-	if err := c.BindJSON(&user); err != nil {
+	var newUser *models.User
+	if err := c.BindJSON(&newUser); err != nil {
 		fail(c, http.StatusNotFound, NoUserData, err.Error())
 		return
 	}
 
-	if user.Email == "" {
-		fail(c, http.StatusNotFound, BadUserEmail, "no email")
+	if newUser.Email == "" {
+		fail(c, http.StatusUnprocessableEntity, BadUserEmail, "no email")
 		return
 	}
 
-	if user.Password == "" {
-		fail(c, http.StatusNotFound, BadUserPassword, "no password")
+	if newUser.Password == "" {
+		fail(c, http.StatusUnprocessableEntity, BadUserPassword, "no password")
 		return
 	}
 
-	// проверить наличие в БД
+	savedUser := repository.GetUser(newUser)
+	if savedUser != nil {
+		fail(c, http.StatusConflict, UserExists, "user exists")
+		return
+	}
 
-	// захешировать пароль
+	password := []byte(newUser.Password)
+	hash, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
+	if err != nil {
+		fail(c, http.StatusNotFound, CanNotCreateUser, err.Error())
+		return
+	}
+	newUser.Password = string(hash)
 
-	// добавить запись в БД
+	err = repository.AddUser(newUser)
+	if err != nil {
+		fail(c, http.StatusNotFound, CanNotCreateUser, err.Error())
+		return
+	}
 
 	ok(c, http.StatusCreated, gin.H{"message": "account created"})
 }
 
 func login(c *gin.Context) {
-	var user models.User
-	if err := c.BindJSON(&user); err != nil {
+	var newUser *models.User
+	if err := c.BindJSON(&newUser); err != nil {
 		fail(c, http.StatusNotFound, NoUserData, err.Error())
 		return
 	}
 
-	if user.Email == "" {
+	if newUser.Email == "" {
 		fail(c, http.StatusNotFound, BadUserEmail, "no email")
 		return
 	}
 
-	if user.Password == "" {
+	if newUser.Password == "" {
 		fail(c, http.StatusNotFound, BadUserPassword, "no password")
 		return
 	}
 
-	// проверить наличие в БД
+	savedUser := repository.GetUser(newUser)
+	if savedUser == nil {
+		fail(c, http.StatusConflict, UserDoesNotExists, "user does not exists")
+		return
+	}
 
-	// захешировать пароль
+	err := bcrypt.CompareHashAndPassword([]byte(savedUser.Password), []byte(newUser.Password))
+	if err != nil {
+		fail(c, http.StatusUnauthorized, BadUserPassword, "password does not match")
+		return
+	}
 
-	// сравнить пароли
-
-	token, err := utils.CreateToken(user.Email)
+	token, err := utils.CreateToken(savedUser.Email)
 	if err != nil {
 		fail(c, http.StatusNotFound, CanNotCreateToken, err.Error())
 		return
@@ -106,7 +131,7 @@ func kitty(c *gin.Context) {
 	rawToken := strings.Split(authString, " ")
 
 	if len(rawToken) != 2 || strings.ToLower(rawToken[0]) != "bearer" {
-		fail(c, http.StatusNotFound, BadToken, "bad token")
+		fail(c, http.StatusUnauthorized, BadToken, "bad token")
 		return
 	}
 
@@ -114,11 +139,11 @@ func kitty(c *gin.Context) {
 
 	_, err := utils.VerifyToken(token)
 	if err != nil {
-		fail(c, http.StatusNotFound, CanNotVerifyToken, err.Error())
+		fail(c, http.StatusUnauthorized, CanNotVerifyToken, err.Error())
 		return
 	}
 
 	// добавить выдачу картинки
 
-	ok(c, http.StatusOK, gin.H{"jwt": token})
+	ok(c, http.StatusOK, gin.H{"cat": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/500px-Cat_November_2010-1a.jpg"})
 }
