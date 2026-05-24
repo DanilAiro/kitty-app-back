@@ -51,7 +51,7 @@ func fail(c *gin.Context, status int, code, message string) {
 func register(c *gin.Context) {
 	var newUser *models.User
 	if err := c.BindJSON(&newUser); err != nil {
-		fail(c, http.StatusNotFound, NoUserData, err.Error())
+		fail(c, http.StatusUnprocessableEntity, NoUserData, "no user data")
 		return
 	}
 
@@ -74,14 +74,14 @@ func register(c *gin.Context) {
 	password := []byte(newUser.Password)
 	hash, err := bcrypt.GenerateFromPassword(password, bcrypt.DefaultCost)
 	if err != nil {
-		fail(c, http.StatusNotFound, CanNotCreateUser, err.Error())
+		fail(c, http.StatusInternalServerError, CanNotCreateUser, "can not create user")
 		return
 	}
 	newUser.Password = string(hash)
 
 	err = repository.AddUser(newUser)
 	if err != nil {
-		fail(c, http.StatusNotFound, CanNotCreateUser, err.Error())
+		fail(c, http.StatusInternalServerError, CanNotCreateUser, "can not create user")
 		return
 	}
 
@@ -91,17 +91,17 @@ func register(c *gin.Context) {
 func login(c *gin.Context) {
 	var newUser *models.User
 	if err := c.BindJSON(&newUser); err != nil {
-		fail(c, http.StatusNotFound, NoUserData, err.Error())
+		fail(c, http.StatusUnprocessableEntity, NoUserData, "no user data")
 		return
 	}
 
 	if newUser.Email == "" {
-		fail(c, http.StatusNotFound, BadUserEmail, "no email")
+		fail(c, http.StatusUnprocessableEntity, BadUserEmail, "no email")
 		return
 	}
 
 	if newUser.Password == "" {
-		fail(c, http.StatusNotFound, BadUserPassword, "no password")
+		fail(c, http.StatusUnprocessableEntity, BadUserPassword, "no password")
 		return
 	}
 
@@ -119,7 +119,7 @@ func login(c *gin.Context) {
 
 	token, err := utils.CreateToken(savedUser.Email)
 	if err != nil {
-		fail(c, http.StatusNotFound, CanNotCreateToken, err.Error())
+		fail(c, http.StatusInternalServerError, CanNotCreateToken, "can not create token")
 		return
 	}
 
@@ -131,7 +131,7 @@ func kitty(c *gin.Context) {
 	rawToken := strings.Split(authString, " ")
 
 	if len(rawToken) != 2 || strings.ToLower(rawToken[0]) != "bearer" {
-		fail(c, http.StatusUnauthorized, BadToken, "bad token")
+		fail(c, http.StatusUnprocessableEntity, BadToken, "bad token")
 		return
 	}
 
@@ -139,7 +139,7 @@ func kitty(c *gin.Context) {
 
 	_, err := utils.VerifyToken(token)
 	if err != nil {
-		fail(c, http.StatusUnauthorized, CanNotVerifyToken, err.Error())
+		fail(c, http.StatusUnauthorized, CanNotVerifyToken, "can not verify token")
 		return
 	}
 
