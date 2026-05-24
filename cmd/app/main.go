@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	controllers.Router()
+	go controllers.Router()
 
 	utils.HandleTermination()
 }
