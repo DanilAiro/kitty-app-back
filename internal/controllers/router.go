@@ -9,19 +9,21 @@ import (
 
 	"github.com/DanilAiro/kitty-app-back/internal/models"
 	"github.com/DanilAiro/kitty-app-back/internal/repository"
+	"github.com/DanilAiro/kitty-app-back/internal/service"
 	"github.com/DanilAiro/kitty-app-back/internal/utils"
 )
 
 const (
-	NoUserData        string = "NUD"
-	BadUserEmail      string = "BUE"
-	BadUserPassword   string = "BUP"
-	CanNotCreateToken string = "CNCT"
-	CanNotCreateUser  string = "CNCU"
-	BadToken          string = "BT"
-	CanNotVerifyToken string = "CNVT"
-	UserExists        string = "UE"
-	UserDoesNotExists string = "UDNE"
+	NoUserData          string = "NUD"
+	BadUserEmail        string = "BUE"
+	BadUserPassword     string = "BUP"
+	CanNotCreateToken   string = "CNCT"
+	CanNotCreateUser    string = "CNCU"
+	BadToken            string = "BT"
+	CanNotVerifyToken   string = "CNVT"
+	UserExists          string = "UE"
+	UserDoesNotExists   string = "UDNE"
+	CanNotGenerateKitty string = "CNGK"
 )
 
 func Router() {
@@ -144,6 +146,11 @@ func kitty(c *gin.Context) {
 	}
 
 	// добавить выдачу картинки
+	kittyPhoto, err := service.GetKittyPhoto()
+	if err != nil {
+		fail(c, http.StatusInternalServerError, CanNotGenerateKitty, "can not generate kitty")
+		return
+	}
 
-	ok(c, http.StatusOK, gin.H{"cat": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Cat_November_2010-1a.jpg/500px-Cat_November_2010-1a.jpg"})
+	ok(c, http.StatusOK, gin.H{"cat_url": kittyPhoto})
 }

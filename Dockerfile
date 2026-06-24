@@ -23,6 +23,8 @@ LABEL app.service="kitty-app-back"
 
 RUN apk add --no-cache ca-certificates
 
+# копирую .env и приложение в итоговый контейнер
+COPY .env .
 COPY --from=builder /app/kitty-app-back .
 
 CMD ["./kitty-app-back"]

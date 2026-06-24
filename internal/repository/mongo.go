@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -17,7 +16,7 @@ var DB = connectDB()
 
 func connectDB() *mongo.Client {
 	client, err := mongo.Connect(context.TODO(),
-		options.Client().ApplyURI(fmt.Sprintf("%s:%s", os.Getenv("MONGO_URI"), os.Getenv("MONGO_PORT"))))
+		options.Client().ApplyURI(os.Getenv("MONGO_URI")))
 
 	if err != nil {
 		log.Fatal(err)
@@ -35,28 +34,28 @@ func connectDB() *mongo.Client {
 }
 
 func GetUser(user *models.User) *models.User {
-    collection := DB.Database(os.Getenv("MONGO_DB")).Collection("users")
+	collection := DB.Database(os.Getenv("MONGO_DB")).Collection("users")
 
-    var result *models.User
+	var result *models.User
 
-    err := collection.FindOne(context.TODO(), map[string]interface{}{
-        "email": user.Email,
-    }).Decode(&result)
-    if err != nil {
-        return nil
-    }
+	err := collection.FindOne(context.TODO(), map[string]interface{}{
+		"email": user.Email,
+	}).Decode(&result)
+	if err != nil {
+		return nil
+	}
 
-    return result
+	return result
 }
 
 func AddUser(user *models.User) error {
-    collection := DB.Database(os.Getenv("MONGO_DB")).Collection("users")
+	collection := DB.Database(os.Getenv("MONGO_DB")).Collection("users")
 
-    _, err := collection.InsertOne(context.TODO(), user)
+	_, err := collection.InsertOne(context.TODO(), user)
 
-    if err != nil {
-        return err
-    }
+	if err != nil {
+		return err
+	}
 
-    return nil
+	return nil
 }
