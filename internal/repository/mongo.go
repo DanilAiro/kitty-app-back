@@ -12,9 +12,9 @@ import (
 	"github.com/DanilAiro/kitty-app-back/internal/models"
 )
 
-var DB = connectDB()
+var DB *mongo.Client
 
-func connectDB() *mongo.Client {
+func ConnectDB() {
 	client, err := mongo.Connect(context.TODO(),
 		options.Client().ApplyURI(os.Getenv("MONGO_URI")))
 
@@ -30,7 +30,7 @@ func connectDB() *mongo.Client {
 		log.Fatal("Cannot connect to MongoDB:", err)
 	}
 
-	return client
+	DB = client
 }
 
 func GetUser(user *models.User) *models.User {
